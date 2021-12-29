@@ -12,7 +12,37 @@ const { Categoria } = require('../models');
  * db-validators - existeCategoria
 */
 
-const crearCategoria = async(req = request, res = response) => {
+const obtenerCategorias = async(req = request, res = response) => {
+
+    const { limite = 5, page = 1 } = req.query;
+    const query = {estado: true};
+
+    const [ total, categorias ] = await Promise.all([
+        Categoria.countDocuments(query),
+        Categoria.find(query)
+            .limit(Number(limite))
+    ]);
+
+    res.json({
+        total, 
+        categorias
+    })
+
+}
+
+const obtenerCategoria = async(req = request, res = response) => {
+    
+    const { id } = req.params;
+
+    const categoria = await Categoria.findById(id);
+
+    res.json({
+        categoria
+    });
+
+}
+
+const crearCategoria = async(req = request, res = response) => {    
 
     const nombre = req.body.nombre.toUpperCase();
 
@@ -45,6 +75,23 @@ const crearCategoria = async(req = request, res = response) => {
 
 }
 
+const actualizarCategoria = async(req = request, res = response) => {
+    
+    const { id } = req.params;
+    const nombreAct = req.body.nombre.toUpperCase();
+
+    console.log(id);
+    
+
+    const categoriaActualizada = await Categoria.findByIdAndUpdate( id, nombreAct);
+
+    res.json( categoriaActualizada );
+}
+
+
 module.exports = {
-    crearCategoria
+    crearCategoria,
+    obtenerCategorias,
+    obtenerCategoria,
+    actualizarCategoria
 }
