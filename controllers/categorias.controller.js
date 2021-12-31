@@ -1,26 +1,17 @@
 const { response, request } = require("express");
 const { Categoria } = require('../models');
 
-
-//TODO
-/**
- * obtenerCategorias - paginado - total - Utilizar metodo populate 
- * obtenerCategoria - populate { objeto de categoria }
- * actualizarCategoria - mediante nombre 
- * borrarCategoria - estado: false
- * validarId mediante middleware personalizado
- * db-validators - existeCategoria
-*/
-
 const obtenerCategorias = async(req = request, res = response) => {
 
-    const { limite = 5, page = 1 } = req.query;
+    const { limite = 5, desde = 0 } = req.query;
     const query = {estado: true};
 
     const [ total, categorias ] = await Promise.all([
         Categoria.countDocuments(query),
         Categoria.find(query)
-            .limit(Number(limite))
+            .populate('usuario', 'nombre')
+            .skip(Number( desde ))
+            .limit(Number( limite ))
     ]);
 
     res.json({
@@ -34,7 +25,7 @@ const obtenerCategoria = async(req = request, res = response) => {
     
     const { id } = req.params;
 
-    const categoria = await Categoria.findById(id);
+    const categoria = await Categoria.findById(id).populate('usuario', 'nombre');
 
     res.json({
         categoria
@@ -78,14 +69,27 @@ const crearCategoria = async(req = request, res = response) => {
 const actualizarCategoria = async(req = request, res = response) => {
     
     const { id } = req.params;
-    const nombreAct = req.body.nombre.toUpperCase();
+    const { estado, usuario, ...data} = req.body;
 
-    console.log(id);
-    
+    data.nombre = data.nombre.toUpperCase();
+    data.usuario = req.usuario._id;
 
-    const categoriaActualizada = await Categoria.findByIdAndUpdate( id, nombreAct);
+    const categoriaActualizada = await Categoria.findByIdAndUpdate( id, data, {new: true} );    
 
     res.json( categoriaActualizada );
+}
+
+const borrarCategoria = async (req = request, res = response) => {
+
+    const { id } = req.params;
+
+    const categoria = await Categoria.findByIdAndUpdate(id, {estado: false});
+
+    res.json({
+        msg: 'Se elimino de forma adecuada',
+        categoria
+    });
+
 }
 
 
@@ -93,5 +97,6 @@ module.exports = {
     crearCategoria,
     obtenerCategorias,
     obtenerCategoria,
-    actualizarCategoria
+    actualizarCategoria,
+    borrarCategoria
 }
